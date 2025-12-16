@@ -1,0 +1,218 @@
+/* ============================
+   ESTILOS GENERALES
+============================ */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f4f4f4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  width: 1024px;
+  height: 768px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.3rem;
+}
+
+#clock {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+/* ❌ Reglas redundantes */
+.card { width: 100%; max-width: 980px; }
+
+/* ✅ Unificar estilos comunes */
+.card, .registro {
+  width: min(100%, 980px);
+  padding: 1.5rem;
+  border-radius: 12px;
+}
+
+/* ============================
+   FORMULARIO
+============================ */
+label {
+  font-size: 1rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+/* ============================
+   BOTONES
+============================ */
+.buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+button {
+  flex: 1;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+/* ❌ Reglas duplicadas para .entrada y .salida */
+.entrada {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.salida {
+  background-color: #f44336; 
+  color: white;
+}
+
+/* ✅ Simplificar usando variables CSS */
+:root {
+  --color-entrada: #4CAF50;
+  --color-salida: #f44336;
+}
+
+.entrada:hover {
+  background-color: #45a049;
+}
+
+.salida:hover {
+  background-color: #da190b;
+}
+
+/* ============================
+   TABLA DE REGISTROS
+============================ */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.8rem;
+  font-size: 14px; /* Reducido para iPad */
+}
+
+th, td {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+th {
+  background-color: #f0f0f0;
+}
+.modal-auth {
+  position: fixed;
+  z-index: 9999;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-auth-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 28px 24px 28px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  min-width: 320px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.modal-auth-content h2 {
+  margin-bottom: 18px;
+  font-size: 1.3rem;
+  color: #007bff;
+}
+.modal-auth-content input {
+  width: 90%;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s;
+}
+.modal-auth-content input:focus {
+  border: 1.5px solid #007bff;
+}
+.auth-error {
+  color: #d32f2f;
+  font-size: 0.95rem;
+  min-height: 22px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.modal-auth-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  width: 100%;
+}
+#authAccept, #authCancel {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: bold;
+}
+#authAccept {
+  background: #007bff;
+  color: #fff;
+}
+#authAccept:hover {
+  background: #0056b3;
+}
+#authCancel {
+  background: #e0e0e0;
+  color: #333;
+}
+#authCancel:hover {
+  background: #bdbdbd;
+}
+
+
+.tiempo-trabajado {
+  margin-left: 6px;
+  font-size: 0.9em;
+  color: #444;
+  font-weight: bold;
+}
+
+.loader {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin: auto;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+
