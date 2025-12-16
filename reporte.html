@@ -282,7 +282,10 @@
       <button class="btn-periodo activo" data-periodo="dia">Día</button>
       <button class="btn-periodo" data-periodo="semana">Semana</button>
       <button class="btn-periodo" data-periodo="quincena">Quincena</button>
-      <button class="btn-periodo" data-periodo="mes">Mes</button>
+      
+      <select id="filtroMesEspecifico" style="margin-left: 10px;">
+        <option value="">Historial Meses</option>
+      </select>
     </div>
   </div>
 
@@ -292,7 +295,7 @@
   <div id="registroContainer">Cargando registros...</div>
 
   <div class="totales">
-    <span>Total Registros: <span id="totalRegistros">0</span></span>
+    <span>Registros: <span id="totalRegistros">0</span></span>
     <span id="horasTrabajadasCont" style="display:none;">
       Horas Trabajadas: <span id="totalHoras">0</span> h
     </span>
@@ -322,11 +325,66 @@
     let periodoActual = 'dia';
     let empleadoActual = 'todos';
     let registrosPorEmpleado = new Map(); // Global para PDF
+    let mesEspecificoSeleccionado = ''; // Nuevo: Almacena el mes seleccionado (YYYY-MM)
 
     const clock = document.getElementById('clock');
     setInterval(() => {
       clock.textContent = new Date().toLocaleTimeString('es-ES');
     }, 1000);
+
+    // Cargar meses disponibles basados en registros existentes
+    async function cargarMesesDisponibles() {
+      const select = document.getElementById('filtroMesEspecifico');
+      // Limpiar opciones excepto la primera
+      while (select.options.length > 1) {
+        select.remove(1);
+      }
+
+      try {
+        const snap = await getDocs(query(collection(db, "registros"), orderBy("fechaCompleta", "desc")));
+        const mesesSet = new Set();
+        
+        snap.forEach(doc => {
+          const data = doc.data();
+          let mesStr = null;
+
+          if (data.fechaCompleta) {
+            mesStr = data.fechaCompleta.substring(0, 7); // YYYY-MM
+          } else if (data.fecha && data.fecha.includes('/')) {
+            // Soporte para formato DD/MM/YYYY
+            const partes = data.fecha.split('/');
+            if (partes.length === 3) {
+              mesStr = `${partes[2]}-${partes[1]}`; // YYYY-MM
+            }
+          }
+
+          if (mesStr) {
+            mesesSet.add(mesStr);
+          }
+        });
+
+        const mesesNombres = [
+          "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+          "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Convertir a array y ordenar descendente
+        const mesesOrdenados = Array.from(mesesSet).sort().reverse();
+
+        mesesOrdenados.forEach(valor => {
+          const [anio, mes] = valor.split('-').map(Number);
+          const texto = `${mesesNombres[mes - 1]} ${anio}`;
+          
+          const option = document.createElement('option');
+          option.value = valor;
+          option.textContent = texto;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error al cargar meses:", error);
+      }
+    }
+    await cargarMesesDisponibles();
 
     document.getElementById('filtroEmpleado').addEventListener('change', async e => {
       empleadoActual = e.target.value;
@@ -334,11 +392,29 @@
       actualizarVisibilidadHoras();
     });
 
+    // Manejar cambio en selector de mes específico
+    document.getElementById('filtroMesEspecifico').addEventListener('change', async e => {
+      // Desactivar otros botones de periodo
+      document.querySelectorAll('.btn-periodo').forEach(b => b.classList.remove('activo'));
+      
+      mesEspecificoSeleccionado = e.target.value;
+      if (mesEspecificoSeleccionado) {
+        periodoActual = 'mes_especifico';
+        await cargarRegistros();
+        actualizarVisibilidadHoras();
+      }
+    });
+
     document.querySelectorAll('.btn-periodo').forEach(btn => {
       btn.addEventListener('click', async () => {
         document.querySelectorAll('.btn-periodo').forEach(b => b.classList.remove('activo'));
         btn.classList.add('activo');
         periodoActual = btn.dataset.periodo;
+        
+        // Resetear selector de mes si se elige otro periodo
+        document.getElementById('filtroMesEspecifico').value = "";
+        mesEspecificoSeleccionado = "";
+
         await cargarRegistros();
         actualizarVisibilidadHoras();
       });
@@ -373,14 +449,16 @@
       if (esExtra && (!decimal || decimal < (1/60))) {
         return "Sin horas extra";
       }
-      if (decimal < 1 && decimal > 0) {
-        const minutos = Math.round(decimal * 60);
-        return `${minutos} minutos`;
-      } else {
-        const horas = Math.floor(decimal);
-        const minutos = Math.round((decimal - horas) * 60);
-        return `${horas}:${minutos.toString().padStart(2, '0')} horas`;
+      
+      let horas = Math.floor(decimal);
+      let minutos = Math.round((decimal - horas) * 60);
+      
+      if (minutos === 60) {
+        horas += 1;
+        minutos = 0;
       }
+      
+      return `${horas}hr ${minutos}min`;
     }
 
     // Calcula la superposición de dos intervalos de tiempo (en minutos)
@@ -426,6 +504,20 @@ async function cargarRegistros() {
     case 'semana': inicio.setDate(hoy.getDate() - 7); break;
     case 'quincena': inicio.setDate(hoy.getDate() - 15); break;
     case 'mes': inicio.setDate(hoy.getDate() - 30); break;
+    case 'mes_especifico':
+      if (mesEspecificoSeleccionado) {
+        const [anio, mes] = mesEspecificoSeleccionado.split('-').map(Number);
+        inicio.setFullYear(anio, mes - 1, 1);
+        inicio.setHours(0, 0, 0, 0);
+        
+        hoy.setFullYear(anio, mes, 0); // Último día del mes
+        hoy.setHours(23, 59, 59, 999);
+      } else {
+        // Fallback si no hay mes seleccionado
+        inicio.setHours(0, 0, 0, 0);
+        hoy.setHours(23, 59, 59, 999);
+      }
+      break;
     default:
       inicio.setHours(0, 0, 0, 0);
       hoy.setHours(23, 59, 59, 999);
