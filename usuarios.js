@@ -9,7 +9,37 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnAgregar) {
     btnAgregar.addEventListener('click', agregarUsuario);
   }
+  const fotoInput = document.getElementById("fotoBase");
+  const preview = document.getElementById("fotoBasePreview");
+  if (fotoInput && preview) {
+    fotoInput.addEventListener('change', () => {
+      const file = fotoInput.files && fotoInput.files[0];
+      if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+      } else {
+        preview.src = "";
+        preview.style.display = "none";
+      }
+    });
+  }
 });
+
+async function subirImagenCloudinary(file, id) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", "web_upload");
+  formData.append("folder", `empleados/${id}`);
+  const resp = await fetch("https://api.cloudinary.com/v1_1/dm4u2wuwr/image/upload", {
+    method: "POST",
+    body: formData
+  });
+  const data = await resp.json();
+  if (!resp.ok || !data.secure_url) {
+    throw new Error(data.error?.message || "Fallo al subir imagen");
+  }
+  return data.secure_url;
+}
 
 // Inicializa la colección de empleados en Firebase
 function inicializarEmpleados() {
@@ -30,16 +60,21 @@ function inicializarEmpleados() {
 }
 
 // Agrega un nuevo empleado a Firebase
-function agregarUsuario() {
+async function agregarUsuario() {
   const id = document.getElementById("newId").value.trim();
   const nombre = document.getElementById("newName").value.trim();
   const horarioEntrada = document.getElementById("horarioEntrada").value.trim();
   const horarioSalida = document.getElementById("horarioSalida").value.trim();
   const comidaInicio = document.getElementById("comidaInicio").value.trim();
   const comidaFin = document.getElementById("comidaFin").value.trim();
+  const fotoInput = document.getElementById("fotoBase");
 
   if (!id || !nombre || !horarioEntrada || !horarioSalida || !comidaInicio || !comidaFin) {
     alert("Complete todos los campos");
+    return;
+  }
+  if (!fotoInput || !fotoInput.files || !fotoInput.files[0]) {
+    alert("Seleccione la foto base del usuario");
     return;
   }
 
@@ -51,36 +86,34 @@ function agregarUsuario() {
     return;
   }
 
-  // Verificar si el ID ya existe
-  db.collection("empleados").doc(id).get()
-    .then((doc) => {
-      if (doc.exists) {
-        alert("ID ya registrado");
-        return;
-      }
+  try {
+    const existente = await db.collection("empleados").doc(id).get();
+    if (existente.exists) {
+      alert("ID ya registrado");
+      return;
+    }
 
-      // Crear objeto de empleado
-      const empleado = {
-        nombre: nombre,
-        horarioEntrada: horarioEntrada,
-        horarioSalida: horarioSalida,
-        comidaInicio: comidaInicio,
-        comidaFin: comidaFin,
-        fechaCreacion: firebase.firestore.FieldValue.serverTimestamp()
-      };
+    const empleado = {
+      nombre: nombre,
+      horarioEntrada: horarioEntrada,
+      horarioSalida: horarioSalida,
+      comidaInicio: comidaInicio,
+      comidaFin: comidaFin,
+      fechaCreacion: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-      // Guardar en Firestore
-      return db.collection("empleados").doc(id).set(empleado);
-    })
-    .then(() => {
-      console.log("Empleado agregado correctamente");
-      limpiarFormulario();
-      mostrarLista();
-    })
-    .catch((error) => {
-      console.error("Error al agregar empleado:", error);
-      alert("Error al agregar empleado: " + error.message);
-    });
+    const secureUrl = await subirImagenCloudinary(fotoInput.files[0], id);
+    empleado.fotoBaseUrl = secureUrl;
+
+    await db.collection("empleados").doc(id).set(empleado);
+    console.log("Empleado agregado correctamente");
+    alert("Empleado registrado correctamente");
+    limpiarFormulario();
+    mostrarLista();
+  } catch (error) {
+    console.error("Error al agregar empleado:", error);
+    alert("Error al agregar empleado: " + error.message);
+  }
 }
 
 // Limpia el formulario después de agregar o actualizar
@@ -91,6 +124,15 @@ function limpiarFormulario() {
   document.getElementById("horarioSalida").value = "17:00";
   document.getElementById("comidaInicio").value = "13:00";
   document.getElementById("comidaFin").value = "14:00";
+  const fotoInput = document.getElementById("fotoBase");
+  if (fotoInput) {
+    fotoInput.value = "";
+  }
+  const preview = document.getElementById("fotoBasePreview");
+  if (preview) {
+    preview.src = "";
+    preview.style.display = "none";
+  }
   
   // Restaurar el botón de agregar si estaba en modo edición
   const btnAgregar = document.querySelector(".btn-agregar");
@@ -175,12 +217,13 @@ function editarEmpleado(id) {
 }
 
 // Actualiza los datos de un empleado en Firebase
-function actualizarEmpleado(id) {
+async function actualizarEmpleado(id) {
   const nombre = document.getElementById("newName").value.trim();
   const horarioEntrada = document.getElementById("horarioEntrada").value.trim();
   const horarioSalida = document.getElementById("horarioSalida").value.trim();
   const comidaInicio = document.getElementById("comidaInicio").value.trim();
   const comidaFin = document.getElementById("comidaFin").value.trim();
+  const fotoInput = document.getElementById("fotoBase");
 
   if (!nombre || !horarioEntrada || !horarioSalida || !comidaInicio || !comidaFin) {
     alert("Complete todos los campos");
@@ -205,7 +248,17 @@ function actualizarEmpleado(id) {
     fechaActualizacion: firebase.firestore.FieldValue.serverTimestamp()
   };
 
-  // Actualizar en Firestore
+  let secureUrl = null;
+  if (fotoInput && fotoInput.files && fotoInput.files[0]) {
+    try {
+      secureUrl = await subirImagenCloudinary(fotoInput.files[0], id);
+      empleadoActualizado.fotoBaseUrl = secureUrl;
+    } catch (e) {
+      alert("Error al subir nueva foto: " + e.message);
+      return;
+    }
+  }
+
   db.collection("empleados").doc(id).update(empleadoActualizado)
     .then(() => {
       console.log("Empleado actualizado correctamente");
@@ -345,11 +398,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
-const nuevoEmpleado = {
-  id: doc.id,
-  nombre: data.nombre,
-  horarioEntrada: data.horarioEntrada,
-  horarioSalida: data.horarioSalida,
-  horarioComida: `${data.comidaInicio}-${data.comidaFin}` // Unificar formato
-};
-// ... existing code ...

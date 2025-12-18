@@ -156,6 +156,14 @@
     <label for="comidaFin">Fin de comida:</label>
     <input type="text" id="comidaFin" placeholder="Ej. 14:00" value="14:00" />
 
+    <label for="fotoBase">Foto base del usuario:</label>
+    <input type="file" id="fotoBase" accept=".jpg,.jpeg,.png,image/*" />
+    <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+      <button id="btnTomarFoto" style="padding:0.4rem 0.8rem; border:1px solid #ccc; background:#f8f8f8; border-radius:6px; cursor:pointer;">📷 Tomar foto con cámara</button>
+      <small style="color:#555;">La foto base es obligatoria (archivo o cámara).</small>
+    </div>
+    <img id="fotoBasePreview" alt="Vista previa" style="max-width: 150px; display: none; border-radius: 8px; margin-top: 8px;" />
+
     <div class="buttons">
       <button class="btn-agregar">➕ Agregar Empleado</button>
     </div>
@@ -180,6 +188,21 @@
   </div>
 
   <a href="index.html">⬅ Volver al registro</a>
+
+  <div id="cameraUserModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center;">
+    <div id="cameraUserBox" style="background:#111; padding:16px; border-radius:10px; color:white; text-align:center; width:90%; max-width:420px; box-shadow:0 6px 20px rgba(0,0,0,0.4);">
+      <div style="display:flex; justify-content:flex-end;">
+        <button id="btnCerrarCamaraUser" title="Cerrar" aria-label="Cerrar" style="background:transparent; border:none; color:#fff; font-size:20px; cursor:pointer;">✖</button>
+      </div>
+      <div style="margin-top:8px;">
+        <video id="userVideoStream" autoplay playsinline style="width:100%; max-width:380px; height:auto; border-radius:8px; object-fit:cover; background:#000;"></video>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:center; margin-top:12px;">
+        <button id="btnCapturarFoto" style="padding:0.5rem 1rem; background:#28a745; color:#fff; border:none; border-radius:6px; cursor:pointer;">Capturar</button>
+      </div>
+      <canvas id="userSnapshotCanvas" width="400" height="300" style="display:none;"></canvas>
+    </div>
+  </div>
 
   <!-- Firebase Config -->
   <script>

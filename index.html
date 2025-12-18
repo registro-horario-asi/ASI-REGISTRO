@@ -110,6 +110,7 @@
       display: flex;
       justify-content: center;
       gap: 10px;
+      margin-top: 16px;
     }
   
     .entrada, .salida {
@@ -240,9 +241,9 @@
 
 
     #horarioInfo {
-  color: #000;              /* texto negro */
-  font-weight: bold;        /* negrita */
-  font-size: 0.65rem;       /* ligeramente más grande si gustas */
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.65rem;
   text-align: center;
 }
 
@@ -455,6 +456,9 @@
             if (doc.exists) {
               const empleado = doc.data();
               nombreInput.value = empleado.nombre;
+              if (empleado.fotoBaseUrl) {
+                setTimeout(() => precomputeDescriptorForId(id, empleado.fotoBaseUrl), 0);
+              }
               
               // Mostrar información del horario si está disponible
               if (empleado.horarioEntrada && empleado.horarioSalida) {
@@ -703,6 +707,7 @@
   </script>
 
   <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <script src="app.js"></script>
   <script src="script.js"></script>
   <script src="registros_diarios.js"></script>
@@ -800,21 +805,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   <!-- Contenedor de contenido con tamaño fijo -->
   <div id="modalCameraContent"
-       style="background: white; padding: 20px; border-radius: 10px; text-align: center; width: 440px; height: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+       style="background: transparent; padding: 0; border-radius: 0; text-align: center; width: auto; height: auto; display: flex; flex-direction: column; align-items: center; justify-content: center;">
     
     <!-- Vista de la cámara -->
     <div id="camaraView" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%;">
       <video id="videoStream" autoplay playsinline style="width: 100%; max-width: 360px; height: auto; border-radius: 10px; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"></video>
-    
-      <dotlottie-player
-        id="btnCapturarFoto"
-        src="https://lottie.host/d25fa576-bdc7-4ef2-b164-c1532c5fad92/p7tQqx6Wp9.lottie"
-        background="transparent"
-        speed="1"
-        style="width: 180px; height: 180px; cursor: pointer; margin-top: 12px;"
-        loop
-        autoplay
-      ></dotlottie-player>
     </div>
 
     <!-- Animación final -->
@@ -861,93 +856,257 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 <script>
-  // Función mejorada para capturar evidencia
-  function capturarEvidencia(id, accion) {
-  return new Promise(async (resolve) => {
+  function capturarEvidencia(id, accion, preBlob) {
+  return new Promise((resolve) => {
+    const cameraModal = document.getElementById("cameraModal");
+    const camaraView = document.getElementById("camaraView");
+    const lottieFinal = document.getElementById("lottieFinal");
+    cameraModal.style.display = "flex";
+    camaraView.style.display = "none";
+    lottieFinal.style.display = "block";
+    const lottiePlayer = lottieFinal.querySelector("dotlottie-player");
+    if (lottiePlayer) {
+      lottiePlayer.stop();
+      lottiePlayer.play();
+    }
+    setTimeout(() => {
+      cameraModal.style.display = "none";
+      camaraView.style.display = "flex";
+      lottieFinal.style.display = "none";
+      resolve(true);
+    }, 1200);
+  });
+}
+
+  async function cargarModelosFaceApi() {
+    // Cargar modelos desde CDN para evitar errores por carpeta /models inexistente
+    // Referencia: pesos oficiales del repositorio face-api.js servidos vía jsDelivr
+    const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+    if (!window.__faceModelsLoaded) {
+      console.log('[face-api] Cargando modelos desde:', MODEL_URL);
+      try {
+        await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        window.__faceModelsLoaded = true;
+        console.log('[face-api] Modelos cargados correctamente');
+      } catch (err) {
+        console.error('[face-api] Error al cargar modelos:', err);
+        throw new Error('No se pudieron cargar los modelos de face-api.js');
+      }
+    }
+  }
+  function preloadFaceModels() {
+    if (window.__faceModelsLoaded) return;
+    const cb = () => cargarModelosFaceApi().catch(() => {});
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(cb, { timeout: 3000 });
+    } else {
+      setTimeout(cb, 0);
+    }
+  }
+  window.__faceDescriptorsCache = window.__faceDescriptorsCache || {};
+  async function precomputeDescriptorForId(id, url) {
+    try {
+      await cargarModelosFaceApi();
+      const img = await faceapi.fetchImage(url);
+      const res = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+      if (res && res.descriptor) {
+        window.__faceDescriptorsCache[id] = res.descriptor;
+      }
+    } catch (e) {}
+  }
+  document.addEventListener("DOMContentLoaded", preloadFaceModels);
+  async function capturarImagenAuto() {
+    return new Promise(async (resolve) => {
+      const cameraModal = document.getElementById("cameraModal");
+      const video = document.getElementById("videoStream");
+      const canvas = document.getElementById("snapshotCanvas");
+      const ctx = canvas.getContext("2d");
+      const camaraView = document.getElementById("camaraView");
+      const lottieFinal = document.getElementById("lottieFinal");
+      try {
+        cameraModal.style.display = "flex";
+        camaraView.style.display = "flex";
+        lottieFinal.style.display = "none";
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        await new Promise(r => setTimeout(r, 800));
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+        const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.9));
+        cameraModal.style.display = "none";
+        resolve(blob || null);
+      } catch (e) {
+        mostrarToast("No se pudo capturar imagen para verificación", "error");
+        cameraModal.style.display = "none";
+        resolve(null);
+      }
+    });
+  }
+  async function verificarIdentidad(id) {
+    // Control de estados de UI / cámara / verificación
     const cameraModal = document.getElementById("cameraModal");
     const video = document.getElementById("videoStream");
     const canvas = document.getElementById("snapshotCanvas");
     const ctx = canvas.getContext("2d");
-    const btnCapturar = document.getElementById("btnCapturarFoto");
-
     const camaraView = document.getElementById("camaraView");
-    const lottieFinal = document.getElementById("lottieFinal");
-
-    // Mostrar modal y elementos iniciales
-    cameraModal.style.display = "flex";
-    camaraView.style.display = "flex";
-    lottieFinal.style.display = "none";
-
+    const UMBRAL = 0.45;
+    // Estado global para asegurar una sola verificación a la vez
+    window.__scanState = window.__scanState || {
+      isModalOpen: false,
+      isScanning: false,
+      verificationDone: false,
+      frameDetecting: false,
+      scanInterval: null,
+      scanTimeout: null,
+    };
+    const state = window.__scanState;
+    if (state.isScanning) {
+      console.warn('[verificación] Ya hay una verificación en curso');
+      mostrarToast("Verificación en curso. Espere...", "error");
+      return { ok: false, blob: null };
+    }
     try {
+      console.log('[verificación] Iniciando verificación para ID:', id);
+      cameraModal.style.display = "flex";
+      camaraView.style.display = "flex";
+      document.getElementById("lottieFinal").style.display = "none";
+      state.isModalOpen = true;
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       video.srcObject = stream;
-      btnCapturar.style.display = "inline-block";
-
-      btnCapturar.onclick = async () => {
-        // Capturar imagen
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        stream.getTracks().forEach(track => track.stop());
-        video.srcObject = null;
-
-        // Ocultar cámara, mostrar animación
-        camaraView.style.display = "none";
-        lottieFinal.style.display = "block";
-
-        // Reiniciar la animación cada vez
-const lottiePlayer = lottieFinal.querySelector("dotlottie-player");
-if (lottiePlayer) {
-  lottiePlayer.stop();
-  lottiePlayer.play();
-}
-
-        // Subida a Cloudinary
-        const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.9));
-        if (!blob) {
-          mostrarToast("No se pudo capturar la imagen.", "error");
-          cameraModal.style.display = "none";
-          resolve(null);
-          return;
+      await cargarModelosFaceApi();
+      const doc = await db.collection("empleados").doc(id).get();
+      if (!doc.exists) {
+        mostrarToast("ID no registrado", "error");
+        if (video && video.srcObject) {
+          try { video.srcObject.getTracks().forEach(t => t.stop()); } catch (err) {}
+          video.srcObject = null;
         }
-
-        const formData = new FormData();
-        formData.append("file", blob);
-        formData.append("upload_preset", "web_upload");
-
+        cameraModal.style.display = "none";
+        return { ok: false, blob: null };
+      }
+      const datos = doc.data();
+      if (!datos.fotoBaseUrl) {
+        mostrarToast("No hay foto base registrada", "error");
+        if (video && video.srcObject) {
+          try { video.srcObject.getTracks().forEach(t => t.stop()); } catch (err) {}
+          video.srcObject = null;
+        }
+        cameraModal.style.display = "none";
+        return { ok: false, blob: null };
+      }
+      let baseDescriptor = window.__faceDescriptorsCache[id] || null;
+      if (!baseDescriptor) {
+        const baseImg = await faceapi.fetchImage(datos.fotoBaseUrl);
+        const baseRes = await faceapi.detectSingleFace(baseImg).withFaceLandmarks().withFaceDescriptor();
+        if (baseRes && baseRes.descriptor) {
+          baseDescriptor = baseRes.descriptor;
+          window.__faceDescriptorsCache[id] = baseDescriptor;
+        }
+      }
+      if (!baseDescriptor) {
+        console.warn('[verificación] Rostro no detectado o descriptor inválido en foto base');
+        mostrarToast("Rostro no detectado en foto base", "error");
+        if (video && video.srcObject) {
+          try { video.srcObject.getTracks().forEach(t => t.stop()); } catch (err) {}
+          video.srcObject = null;
+        }
+        cameraModal.style.display = "none";
+        return { ok: false, blob: null };
+      }
+      state.isScanning = true;
+      state.verificationDone = false;
+      // Loop de reconocimiento controlado
+      let loopResult = null;
+      loopResult = await new Promise((resolveLoop) => {
+        // Timeout de seguridad si no se detecta rostro
+        state.scanTimeout = setTimeout(() => {
+          if (!state.verificationDone) {
+            console.warn('[verificación] Timeout sin detectar rostro');
+            mostrarToast("No se detectó rostro", "error");
+            state.verificationDone = true;
+            resolveLoop(false);
+          }
+        }, 10000);
+        state.scanInterval = setInterval(async () => {
+          if (state.verificationDone) return;
+          if (state.frameDetecting) return;
+          state.frameDetecting = true;
+          try {
+            const det = await faceapi
+              .detectSingleFace(video)
+              .withFaceLandmarks()
+              .withFaceDescriptor();
+            if (det && det.descriptor) {
+              const dist = faceapi.euclideanDistance(baseDescriptor, det.descriptor);
+              console.log('[verificación] Distancia euclidiana (loop):', dist);
+              if (dist <= UMBRAL) {
+                // Capturar evidencia del frame actual
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.9));
+                mostrarToast("Identidad verificada", "success");
+                state.verificationDone = true;
+                resolveLoop(blob || null);
+              } else {
+                mostrarToast("Rostro no coincide con el usuario registrado", "error");
+                state.verificationDone = true;
+                resolveLoop(false);
+              }
+            }
+          } catch (err) {
+            console.error('[verificación] Error en loop de detección:', err);
+          } finally {
+            state.frameDetecting = false;
+          }
+        }, 300);
+      });
+      // Detener loop y cámara
+      if (state.scanInterval) {
+        clearInterval(state.scanInterval);
+        state.scanInterval = null;
+      }
+      if (state.scanTimeout) {
+        clearTimeout(state.scanTimeout);
+        state.scanTimeout = null;
+      }
+      // Detener cámara correctamente
+      if (video && video.srcObject) {
         try {
-          const response = await fetch("https://api.cloudinary.com/v1_1/dzudiywu8/image/upload", {
-            method: "POST",
-            body: formData
-          });
-
-          const data = await response.json();
-
-         // Cierre automático del modal tras 2.24s (20% más rápido)
-setTimeout(() => {
-  cameraModal.style.display = "none";
-  camaraView.style.display = "flex";
-  lottieFinal.style.display = "none";
-}, 2240);
-
-
-          resolve(data.secure_url);
-
-        } catch (error) {
-          console.error("Error al subir imagen:", error);
-          mostrarToast("Error al subir la imagen.", "error");
+          video.srcObject.getTracks().forEach(t => t.stop());
+        } catch (e) {}
+        video.srcObject = null;
+      }
+      state.isScanning = false;
+      // Cerrar modal en fallo; mantener modal para animación en éxito y dejar que
+      // capturarEvidencia maneje la animación y cierre.
+      if (loopResult === false) {
+        // Fallo: cerrar modal suavemente
+        setTimeout(() => {
           cameraModal.style.display = "none";
-          camaraView.style.display = "flex";
-          lottieFinal.style.display = "none";
-          resolve(null);
-        }
-      };
-    } catch (error) {
-      console.error("Error al activar cámara:", error);
-      mostrarToast("No se pudo acceder a la cámara.", "error");
+        }, 300);
+        return { ok: false, blob: null };
+      } else {
+        // Éxito: devolver blob para que se suba como evidencia
+        return { ok: true, blob: loopResult };
+      }
+    } catch (e) {
+      console.error('[verificación] Error en verificación facial:', e);
+      mostrarToast("Error en verificación facial", "error");
+      // Detener cámara y cerrar modal en caso de excepción
+      const video = document.getElementById("videoStream");
+      const cameraModal = document.getElementById("cameraModal");
+      if (video && video.srcObject) {
+        try { video.srcObject.getTracks().forEach(t => t.stop()); } catch (err) {}
+        video.srcObject = null;
+      }
       cameraModal.style.display = "none";
-      resolve(null);
+      window.__scanState.isScanning = false;
+      window.__scanState.verificationDone = false;
+      return { ok: false, blob: null };
     }
-  });
-}
+  }
 
 
 
@@ -1066,9 +1225,9 @@ registros.forEach(doc => {
       return;
     }
 
-    // Capturar evidencia solo si la lógica fue válida
-    const fotoURL = await capturarEvidencia(id, accion);
-    if (!fotoURL) return;
+    const ver = await verificarIdentidad(id);
+    if (!ver.ok) return;
+    await capturarEvidencia(id, accion, ver.blob);
 
     const nuevoRegistro = {
       id,
@@ -1077,8 +1236,7 @@ registros.forEach(doc => {
       hora,
       fecha,
       fechaCompleta,
-      tiempoTrabajado: null,
-      fotoURL
+      tiempoTrabajado: null
     };
 
     // Si es salida, calcular duración desde la última entrada sin cerrar
