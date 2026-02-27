@@ -1,0 +1,726 @@
+<!DOCTYPE html> 
+<html lang="es">
+<head>
+
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reporte de Asistencia - ASI</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+  
+    body {
+      min-height: 100vh;
+      width: 100vw;
+      background: linear-gradient(135deg, #1e1e1e, #2c3e50);
+      color: #fff;
+      position: relative;
+      overflow-x: hidden;
+    }
+  
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(6px);
+      z-index: -1;
+      -webkit-backface-visibility: hidden;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      will-change: opacity;
+    }
+  
+    header {
+      background-color: rgba(44, 62, 80, 0.8);
+      backdrop-filter: blur(10px);
+      color: white;
+      padding: 15px;
+      text-align: center;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+  
+    nav {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      text-align: center;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+  
+    nav a {
+      margin: 0 10px;
+      text-decoration: none;
+      color: #ffffff;
+      font-weight: bold;
+      transition: color 0.3s ease;
+    }
+  
+    nav a:hover {
+      color: #81c784;
+    }
+  
+    .filtros {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(6px);
+      border-radius: 0 0 12px 12px;
+    }
+  
+    select, button {
+      padding: 6px 10px;
+      margin: 5px;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+    }
+  
+    button.activo {
+      background-color: #4caf50;
+      color: white;
+    }
+  
+    #registroContainer {
+      padding: 20px;
+      overflow-x: auto;
+    }
+  
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(4px);
+      border-radius: 10px;
+      overflow: hidden;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+  
+    th, td {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  
+    th {
+      background-color: rgba(255, 255, 255, 0.12);
+    }
+  
+    th:nth-child(2), td:nth-child(2) {
+      width: 18%;
+      min-width: 120px;
+      max-width: 200px;
+    }
+  
+    th:nth-child(1), td:nth-child(1) {
+      width: 8%;
+      min-width: 60px;
+      max-width: 90px;
+    }
+  
+    th:nth-child(3), td:nth-child(3) {
+      width: 13%;
+      min-width: 90px;
+      max-width: 120px;
+    }
+  
+    th:nth-child(4), td:nth-child(4),
+    th:nth-child(5), td:nth-child(5) {
+      width: 10%;
+      min-width: 70px;
+      max-width: 90px;
+    }
+  
+    th:nth-child(6), td:nth-child(6),
+    th:nth-child(7), td:nth-child(7) {
+      width: 12%;
+      min-width: 80px;
+      max-width: 100px;
+    }
+  
+    th:nth-child(8), td:nth-child(8) {
+      width: 17%;
+      min-width: 110px;
+      max-width: 150px;
+    }
+  
+    h3 {
+      background: transparent;
+      padding: 0;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      border-radius: 0;
+      color: #a5d6a7;
+    }
+  
+    .totales {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-around;
+      font-weight: bold;
+      backdrop-filter: blur(4px);
+      border-radius: 10px;
+      color: #fff;
+    }
+  
+    #btnLimpiar {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin: 10px 20px;
+      padding: 8px 12px;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: background-color 0.3s ease;
+    }
+  
+    #btnLimpiar:hover {
+      background-color: #c0392b;
+    }
+  
+    .pdf-icon-container {
+      background-color: #27ae60;
+      color: white;
+      padding: 4px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 4px;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: bold;
+      user-select: none;
+    }
+  
+    .pdf-icon {
+      font-size: 1.2em;
+      transition: color 0.3s ease;
+    }
+  
+    .pdf-icon-container:hover .pdf-icon {
+      color: #145a32;
+    }
+  
+    .pdf-icon-container:hover {
+      background-color: #2ecc71;
+    }
+  
+    @media (max-width: 900px) {
+      th, td {
+        font-size: 0.95em;
+        padding: 6px;
+      }
+      th:nth-child(2), td:nth-child(2) { min-width: 80px; max-width: 120px; }
+    }
+
+
+    tr.totales-fila {
+  font-weight: bold;
+  font-size: 1.05rem;
+  color: black;
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+
+
+
+  </style>
+  
+
+  <link rel="icon" href="favi.ico" type="image/png">
+
+</head>
+<body>
+
+
+  <script>
+    // Protección: Solo acceso tras autenticación modal
+    if (sessionStorage.getItem('modalAutenticado') !== 'true') {
+      window.location.href = 'index.html';
+    }
+    // Doble protección: Validar sesión al cargar reporte.html
+    if (sessionStorage.getItem('logueado') !== 'true') {
+      window.location.href = 'inicio.html';
+    }
+  </script>
+  
+
+
+  <header>
+    <h1>Reporte de Asistencia</h1>
+    <p id="clock"></p>
+  </header>
+
+  <nav>
+    <a href="index.html">🏠 Inicio</a>
+    <a href="usuarios.html">👤 Usuarios</a>
+    <a href="reporte.html">📄 Reporte</a>
+  </nav>
+
+  <div class="filtros">
+    <div>
+      <label for="filtroEmpleado">Empleado:</label>
+      <select id="filtroEmpleado">
+        <option value="todos">Todos</option>
+      </select>
+    </div>
+    <div>
+      <label>Período:</label>
+      <button class="btn-periodo activo" data-periodo="dia">Día</button>
+      <button class="btn-periodo" data-periodo="semana">Semana</button>
+      <button class="btn-periodo" data-periodo="quincena">Quincena</button>
+      
+      <select id="filtroMesEspecifico" style="margin-left: 10px;">
+        <option value="">Historial Meses</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Botón para limpiar registros del día -->
+  <button id="btnLimpiar" title="Eliminar registros del día actual">🗑️ Limpiar registros del día</button>
+
+  <div id="registroContainer">Cargando registros...</div>
+
+  <div class="totales">
+    <span>Registros: <span id="totalRegistros">0</span></span>
+    <span id="horasTrabajadasCont" style="display:none;">
+      Horas Trabajadas: <span id="totalHoras">0</span> h
+    </span>
+    <span>Horas Extras: <span id="totalExtras">0</span> h</span>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import {
+      getFirestore, collection, getDocs, query, orderBy, deleteDoc, doc, where, writeBatch, getDoc
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+  apiKey: "AIzaSyDrGJ2fm4SKusE6Utd8LWUYbZ8a4OlxK7Q",
+  authDomain: "asi-registro.firebaseapp.com",
+  databaseURL: "https://asi-registro-default-rtdb.firebaseio.com",
+  projectId: "asi-registro",
+  storageBucket: "asi-registro.firebasestorage.app",
+  messagingSenderId: "69513223842",
+  appId: "1:69513223842:web:d289ac996da4d8b3bcc1fb",
+  measurementId: "G-13351PS544"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let periodoActual = 'dia';
+    let empleadoActual = 'todos';
+    let registrosPorEmpleado = new Map(); // Global para PDF
+    let mesEspecificoSeleccionado = ''; // Nuevo: Almacena el mes seleccionado (YYYY-MM)
+
+    const clock = document.getElementById('clock');
+    setInterval(() => {
+      clock.textContent = new Date().toLocaleTimeString('es-ES');
+    }, 1000);
+
+    // Cargar meses disponibles basados en registros existentes
+    async function cargarMesesDisponibles() {
+      const select = document.getElementById('filtroMesEspecifico');
+      // Limpiar opciones excepto la primera
+      while (select.options.length > 1) {
+        select.remove(1);
+      }
+
+      try {
+        const snap = await getDocs(query(collection(db, "registros"), orderBy("fechaCompleta", "desc")));
+        const mesesSet = new Set();
+        
+        snap.forEach(doc => {
+          const data = doc.data();
+          let mesStr = null;
+
+          if (data.fechaCompleta) {
+            mesStr = data.fechaCompleta.substring(0, 7); // YYYY-MM
+          } else if (data.fecha && data.fecha.includes('/')) {
+            // Soporte para formato DD/MM/YYYY
+            const partes = data.fecha.split('/');
+            if (partes.length === 3) {
+              mesStr = `${partes[2]}-${partes[1]}`; // YYYY-MM
+            }
+          }
+
+          if (mesStr) {
+            mesesSet.add(mesStr);
+          }
+        });
+
+        const mesesNombres = [
+          "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+          "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Convertir a array y ordenar descendente
+        const mesesOrdenados = Array.from(mesesSet).sort().reverse();
+
+        mesesOrdenados.forEach(valor => {
+          const [anio, mes] = valor.split('-').map(Number);
+          const texto = `${mesesNombres[mes - 1]} ${anio}`;
+          
+          const option = document.createElement('option');
+          option.value = valor;
+          option.textContent = texto;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error al cargar meses:", error);
+      }
+    }
+    await cargarMesesDisponibles();
+
+    document.getElementById('filtroEmpleado').addEventListener('change', async e => {
+      empleadoActual = e.target.value;
+      await cargarRegistros();
+      actualizarVisibilidadHoras();
+    });
+
+    // Manejar cambio en selector de mes específico
+    document.getElementById('filtroMesEspecifico').addEventListener('change', async e => {
+      // Desactivar otros botones de periodo
+      document.querySelectorAll('.btn-periodo').forEach(b => b.classList.remove('activo'));
+      
+      mesEspecificoSeleccionado = e.target.value;
+      if (mesEspecificoSeleccionado) {
+        periodoActual = 'mes_especifico';
+        await cargarRegistros();
+        actualizarVisibilidadHoras();
+      }
+    });
+
+    document.querySelectorAll('.btn-periodo').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        document.querySelectorAll('.btn-periodo').forEach(b => b.classList.remove('activo'));
+        btn.classList.add('activo');
+        periodoActual = btn.dataset.periodo;
+        
+        // Resetear selector de mes si se elige otro periodo
+        document.getElementById('filtroMesEspecifico').value = "";
+        mesEspecificoSeleccionado = "";
+
+        await cargarRegistros();
+        actualizarVisibilidadHoras();
+      });
+    });
+
+    // Cargar empleados en el filtro
+    async function cargarEmpleados() {
+      const sel = document.getElementById('filtroEmpleado');
+      const snap = await getDocs(collection(db, "empleados"));
+      sel.querySelectorAll('option:not([value="todos"])').forEach(opt => opt.remove());
+      snap.forEach(doc => {
+        const emp = doc.data();
+        const opt = document.createElement('option');
+        opt.value = doc.id;
+        opt.textContent = emp.nombre;
+        sel.appendChild(opt);
+      });
+    }
+
+    function obtenerFechaLimite() {
+      const hoy = new Date();
+      switch (periodoActual) {
+        case 'semana': hoy.setDate(hoy.getDate() - 7); break;
+        case 'quincena': hoy.setDate(hoy.getDate() - 15); break;
+        case 'mes': hoy.setDate(hoy.getDate() - 30); break;
+        default: hoy.setHours(0, 0, 0, 0); break;
+      }
+      return hoy.toISOString().slice(0, 10);
+    }
+
+    function formatearHorasDecimal(decimal, esExtra = false) {
+      if (esExtra && (!decimal || decimal < (1/60))) {
+        return "Sin horas extra";
+      }
+      
+      let horas = Math.floor(decimal);
+      let minutos = Math.round((decimal - horas) * 60);
+      
+      if (minutos === 60) {
+        horas += 1;
+        minutos = 0;
+      }
+      
+      return `${horas}hr ${minutos}min`;
+    }
+
+    // Calcula la superposición de dos intervalos de tiempo (en minutos)
+    function calcularSuperposicion(inicio1, fin1, inicio2, fin2) {
+      const inicio = Math.max(inicio1, inicio2);
+      const fin = Math.min(fin1, fin2);
+      return Math.max(0, fin - inicio);
+    }
+
+    // Convierte una hora "HH:mm:ss" a minutos desde las 00:00
+    function horaToMinutos(hora) {
+      if (!hora) return null;
+      const [h, m, s] = hora.split(":").map(Number);
+      return h * 60 + m + (s ? s / 60 : 0);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// NUEVA FUNCIÓN para reporte.html compatible con la estructura de 'registros'
+async function cargarRegistros() {
+  const contenedor = document.getElementById('registroContainer');
+  contenedor.innerHTML = "Cargando...";
+  registrosPorEmpleado = new Map();
+
+  const snap = await getDocs(query(collection(db, "registros"), orderBy("fechaCompleta", "desc")));
+
+  const hoy = new Date();
+  const inicio = new Date(hoy);
+  switch (periodoActual) {
+    case 'semana': inicio.setDate(hoy.getDate() - 7); break;
+    case 'quincena': inicio.setDate(hoy.getDate() - 15); break;
+    case 'mes': inicio.setDate(hoy.getDate() - 30); break;
+    case 'mes_especifico':
+      if (mesEspecificoSeleccionado) {
+        const [anio, mes] = mesEspecificoSeleccionado.split('-').map(Number);
+        inicio.setFullYear(anio, mes - 1, 1);
+        inicio.setHours(0, 0, 0, 0);
+        
+        hoy.setFullYear(anio, mes, 0); // Último día del mes
+        hoy.setHours(23, 59, 59, 999);
+      } else {
+        // Fallback si no hay mes seleccionado
+        inicio.setHours(0, 0, 0, 0);
+        hoy.setHours(23, 59, 59, 999);
+      }
+      break;
+    default:
+      inicio.setHours(0, 0, 0, 0);
+      hoy.setHours(23, 59, 59, 999);
+      break;
+  }
+
+  let totalHoras = 0, totalExtras = 0, totalRegistros = 0;
+  const registrosAgrupados = new Map();
+  const cacheComidas = {};
+
+  for (const docu of snap.docs) {
+    const r = docu.data();
+    if (r.fechaCompleta < inicio.toISOString() || r.fechaCompleta > hoy.toISOString()) continue;
+    if (empleadoActual !== 'todos' && r.id !== empleadoActual) continue;
+
+    const claveEmpleado = `${r.id}_${r.nombre}`;
+    if (!registrosAgrupados.has(claveEmpleado)) registrosAgrupados.set(claveEmpleado, {});
+    const porFecha = registrosAgrupados.get(claveEmpleado);
+
+    if (!porFecha[r.fecha]) porFecha[r.fecha] = [];
+    porFecha[r.fecha].push(r);
+  }
+
+  let html = '';
+
+  for (const [clave, registrosPorFecha] of registrosAgrupados.entries()) {
+    const [id, nombre] = clave.split('_');
+    html += `<h3>👤 ${nombre} (ID: ${id})</h3>`;
+    html += `<table><thead><tr><th>ID</th><th>Nombre</th><th>Fecha</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Horas Extras</th>`;
+    if (periodoActual !== 'dia') html += `<th>Informe PDF</th>`;
+    html += `</tr></thead><tbody>`;
+
+    let sumaHoras = 0, sumaExtras = 0;
+    const registrosParaPDF = [];
+
+    for (const fecha in registrosPorFecha) {
+      const registros = registrosPorFecha[fecha];
+      let entrada = null, salida = null;
+
+      // Filtrar entradas y salidas válidas
+      const entradas = registros.filter(r => r.tipo === "Entrada").map(r => r.hora).sort();
+      const salidas = registros.filter(r => r.tipo === "Salida").map(r => r.hora).sort();
+
+      if (entradas.length > 0) entrada = entradas[0];
+      if (salidas.length > 0) salida = salidas[salidas.length - 1];
+
+      let horas = 0, extras = 0;
+
+      if (entrada && salida) {
+        if (!cacheComidas[id]) {
+          const docEmp = await getDoc(doc(db, "empleados", id));
+          if (docEmp.exists()) {
+            const emp = docEmp.data();
+            cacheComidas[id] = {
+              comidaInicio: emp.comidaInicio,
+              comidaFin: emp.comidaFin
+            };
+          } else {
+            cacheComidas[id] = { comidaInicio: null, comidaFin: null };
+          }
+        }
+
+        const { comidaInicio, comidaFin } = cacheComidas[id];
+        const minEntrada = horaToMinutos(entrada);
+        const minSalida = horaToMinutos(salida);
+        let minutosTrabajados = minSalida - minEntrada;
+
+        if (comidaInicio && comidaFin) {
+          const minComidaInicio = horaToMinutos(comidaInicio);
+          const minComidaFin = horaToMinutos(comidaFin);
+          const minDescontar = calcularSuperposicion(minEntrada, minSalida, minComidaInicio, minComidaFin);
+          minutosTrabajados -= minDescontar;
+        }
+
+        horas = minutosTrabajados / 60;
+        extras = horas > 8 ? horas - 8 : 0;
+      }
+
+      sumaHoras += horas;
+      sumaExtras += extras;
+      totalHoras += horas;
+      totalExtras += extras;
+      totalRegistros++;
+
+      registrosParaPDF.push({
+        fecha, horaEntrada: entrada, horaSalida: salida,
+        horas: formatearHorasDecimal(horas), extras: formatearHorasDecimal(extras, true)
+      });
+
+      html += `<tr><td>${id}</td><td>${nombre}</td><td>${fecha}</td><td>${entrada || '-'}</td><td>${salida || '-'}</td><td>${formatearHorasDecimal(horas)}</td><td>${formatearHorasDecimal(extras, true)}</td>`;
+      if (periodoActual !== 'dia') html += `<td></td>`;
+      html += `</tr>`;
+    }
+
+    if (periodoActual !== 'dia') {
+  html += `<tr class="totales-fila" style="background:#f0f0f0;"><td colspan="5" style="text-align:right;">Totales período:</td><td>${formatearHorasDecimal(sumaHoras)}</td><td>${formatearHorasDecimal(sumaExtras)}</td><td style="text-align:center;"><button class="pdf-icon-container btn-descargar-pdf-periodo" data-id="${id}" data-nombre="${nombre}" title="Descargar Informe PDF del período">PDF <span class="pdf-icon">📄</span></button></td></tr>`;
+}
+
+
+    html += '</tbody></table>';
+    registrosPorEmpleado.set(clave, registrosParaPDF); // Para el PDF
+  }
+
+  contenedor.innerHTML = html || "<p>No hay registros para mostrar.</p>";
+  document.getElementById('totalRegistros').textContent = totalRegistros;
+  document.getElementById('totalHoras').textContent = formatearHorasDecimal(totalHoras);
+  document.getElementById('totalExtras').textContent = formatearHorasDecimal(totalExtras);
+  actualizarVisibilidadHoras();
+
+  document.querySelectorAll('.btn-descargar-pdf-periodo').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const id = this.getAttribute('data-id');
+      const nombre = this.getAttribute('data-nombre');
+      const registrosFiltrados = registrosPorEmpleado.get(`${id}_${nombre}`);
+      await generarPDFUsuario(nombre, id, registrosFiltrados, periodoActual);
+    });
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    function actualizarVisibilidadHoras() {
+      const contHoras = document.getElementById('horasTrabajadasCont');
+      if (periodoActual === 'dia') {
+        contHoras.style.display = 'inline';
+      } else {
+        contHoras.style.display = 'none';
+      }
+    }
+
+    document.getElementById('btnLimpiar').addEventListener('click', async () => {
+      if (!confirm('¿Seguro que quieres eliminar todos los registros del día actual?')) return;
+      const hoyStr = new Date().toISOString().slice(0,10);
+      const q = query(collection(db, "registros_diarios"), where("fecha", "==", hoyStr));
+      const snap = await getDocs(q);
+      const batch = writeBatch(db);
+      snap.forEach(docu => batch.delete(doc(db, "registros_diarios", docu.id)));
+      await batch.commit();
+      alert('Registros del día eliminados.');
+      cargarRegistros();
+    });
+
+    // Inicialización
+    await cargarEmpleados();
+    await cargarRegistros();
+  </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
+<script>
+async function generarPDFUsuario(nombre, id, registros, periodo) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.text(`Reporte de Asistencia - ${nombre} (ID: ${id})`, 10, 10);
+  doc.text(`Período: ${periodo}`, 10, 18);
+  const rows = registros.map(r => [r.fecha, r.horaEntrada || '-', r.horaSalida || '-', r.horas || '-', r.extras || '-']);
+  doc.autoTable({
+    head: [['Fecha', 'Entrada', 'Salida', 'Horas', 'Horas Extras']],
+    body: rows,
+    startY: 25
+  });
+  doc.save(`reporte_${nombre}_${periodo}.pdf`);
+}
+
+document.querySelectorAll('.btn-descargar-pdf-periodo').forEach(btn => {
+  btn.addEventListener('click', async function() {
+    const id = this.getAttribute('data-id');
+    const nombre = this.getAttribute('data-nombre');
+    const registrosFiltrados = registrosPorEmpleado.get(`${id}_${nombre}`);
+    await generarPDFUsuario(nombre, id, registrosFiltrados, periodoActual);
+  });
+});
+</script>
+
+
+<script>
+  if (window.electronAPI) {
+    window.electronAPI.onRedNoAutorizada(() => {
+      window.location.replace("red-no-autorizada.html");
+    });
+  }
+</script>
+
+</body>
+</html>

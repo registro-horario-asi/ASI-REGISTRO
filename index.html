@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <link rel="icon" href="favi.ico" type="image/ico">
+  <link rel="apple-touch-icon" href="favi.ico">
+  <title>Control de Empleados</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+  
+    html, body {
+      height: 100%;
+  width: 100%;
+  overflow: hidden; /* deja esto si solo scroll en .registro */
+  position: relative;
+    }
+  
+    #videoFondo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      transform: translateZ(0);
+      will-change: transform;
+    }
+  
+    .overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: -1;
+
+  /* Mejora visual para evitar líneas blancas y flickering */
+  -webkit-backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: opacity;
+}
+
+  
+    #clock {
+      font-size: 72px;
+      text-align: center;
+      font-family: 'Orbitron', sans-serif;
+      color: #fff;
+      text-shadow: 2px 2px 10px rgba(0,0,0,0.7);
+      margin-top: 20px;
+    }
+  
+    .contenedor {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: calc(100vh - 20px);
+      padding: 10px 20px;
+      gap: 15px;
+      overflow: hidden;
+      transform: translate3d(0,0,0);
+
+    }
+  
+    .card {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 20px;
+      width: 100%;
+      max-width: 800px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transform: translate3d(0,0,0);
+
+    }
+  
+    label {
+      color: #fff;
+      margin-bottom: 8px;
+      display: block;
+      text-align: center;
+    }
+  
+    input[type="text"] {
+      width: 70%;
+      margin: 5px auto 10px;
+      display: block;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+    }
+
+    #employeeName {
+      color: #fff !important;
+      -webkit-text-fill-color: #fff !important;
+      background-color: rgba(0, 0, 0, 0.2); /* Fondo oscuro para resaltar letras blancas */
+    }
+  
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+  
+    .entrada, .salida {
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+  
+    .entrada {
+      background: linear-gradient(90deg, #4caf50, #81c784);
+    }
+  
+    .salida {
+      background: linear-gradient(90deg, #f44336, #e57373);
+    }
+  
+    .entrada:hover, .salida:hover {
+      filter: brightness(90%);
+    }
+  
+    .registro {
+      background: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+  overflow-y: auto;
+  padding: 10px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  position: relative;
+  z-index: 0;
+  transform: translate3d(0,0,0);
+
+}
+  
+    .registro::-webkit-scrollbar {
+      width: 0px;
+      background: transparent;
+    }
+  
+    .nav-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+  
+    .link-button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: rgba(33, 33, 33, 0.6);
+    color: white;
+    text-decoration: none;
+    transition: background 0.3s ease;
+  }
+
+  .link-button:hover {
+    background: rgba(33, 33, 33, 0.8);
+  }
+  
+    .empleado-card {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+  
+    .empleado-header {
+      background-color: transparent;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: 18px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      padding-bottom: 6px;
+    }
+  
+    .empleado-registros {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+  
+    .registro-seccion {
+      flex: 1;
+      min-width: 250px;
+    }
+  
+    .registro-titulo {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.3);
+      padding-bottom: 4px;
+    }
+  
+    .registro-entrada .registro-titulo {
+      color: #a5d6a7;
+    }
+  
+    .registro-salida .registro-titulo {
+      color: #ef9a9a;
+    }
+  
+    .registro-item {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 8px 12px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: #e0e0e0;
+    }
+  
+    .sin-registros {
+      font-style: italic;
+      color: #cccccc;
+      font-size: 14px;
+    }
+
+
+    #horarioInfo {
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.65rem;
+  text-align: center;
+}
+
+
+
+
+#toastContainer {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+}
+
+.toast {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  animation: fadeOut 3s forwards;
+}
+
+.toast-success {
+  background-color: #4caf50;
+}
+
+.toast-error {
+  background-color: #f44336;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-20px); }
+}
+
+
+
+
+.empty-state {
+  color: white;
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
+  text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
+}
+
+
+.logo-inferior {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 180px; /* 120px + 50% = 180px */
+  z-index: 2;
+  opacity: 0.9;
+  transition: opacity 0.3s ease;
+}
+
+.logo-inferior:hover {
+  opacity: 1;
+}
+
+
+
+
+  </style>
+  
+</head>
+<body>
+
+
+<img src="fondo-asi.png" alt="Fondo" 
+  style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; transform: scale(1.2);">
+
+
+
+
+
+
+
+
+
+ 
+  <div id="clock">--:--:--</div>
+
+  <div class="contenedor">
+    <div class="card">
+      <label for="employeeId">ID del empleado:</label>
+      <input type="text" id="employeeId" placeholder="Ej. 1234" />
+      <label for="employeeName">Nombre del empleado:</label>
+      <input type="text" id="employeeName" placeholder="Nombre aparecerá automáticamente" disabled />
+      <div id="horarioInfo"></div>
+
+
+      <div class="buttons">
+        <button class="entrada" onclick="registrar('Entrada')">Registrar Entrada</button>
+<button class="salida" onclick="registrar('Salida')">Registrar Salida</button>
+
+      </div>
+    </div>
+
+
+    
+<div class="nav-buttons">
+  <button id="linkUsuarios" class="link-button">➕ Gestionar usuarios</button>
+  <button id="linkReporte" class="link-button">📊 Ver reporte</button>
+  <button class="link-button" id="btnReinicio">🗑️ Reinicio</button>l
+</div>
+  </div>
+
+  <div id="toastContainer"></div>
+
+  <!-- Modal de autenticación profesional -->
+  <div id="authModal" class="modal-auth" style="display:none;">
+    <div class="modal-auth-content">
+      <h2>Autenticación requerida</h2>
+      <input type="text" id="authUser" placeholder="Usuario" autocomplete="username" />
+      <input type="password" id="authPass" placeholder="Contraseña" autocomplete="current-password" />
+      <div id="authError" class="auth-error"></div>
+      <div class="modal-auth-actions">
+        <button id="authAccept">Ingresar</button>
+        <button id="authCancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+  <!-- Configuración de Firebase -->
+  <script>
+    // Configuración de Firebase
+    const firebaseConfig = {
+  apiKey: "AIzaSyDrGJ2fm4SKusE6Utd8LWUYbZ8a4OlxK7Q",
+  authDomain: "asi-registro.firebaseapp.com",
+  databaseURL: "https://asi-registro-default-rtdb.firebaseio.com",
+  projectId: "asi-registro",
+  storageBucket: "asi-registro.firebasestorage.app",
+  messagingSenderId: "69513223842",
+  appId: "1:69513223842:web:d289ac996da4d8b3bcc1fb",
+  measurementId: "G-13351PS544"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+    firebase.analytics();
+  </script>
+
+<script>
+function actualizarEstadoBotonesAdmin(esAdmin) {
+  const btnUsuarios = document.getElementById('linkUsuarios');
+  const btnReporte = document.getElementById('linkReporte');
+  const btnReinicio = document.getElementById('btnReinicio');
+  
+  if (btnUsuarios) {
+    btnUsuarios.disabled = !esAdmin;
+  }
+  if (btnReporte) {
+    btnReporte.disabled = !esAdmin;
+  }
+  if (btnReinicio) {
+    btnReinicio.disabled = !esAdmin;
+  }
+}
+
+auth.onAuthStateChanged((user) => {
+  const tienePermisoModal = sessionStorage.getItem('modalAutenticado') === 'true';
+  
+  if (user) {
+    sessionStorage.setItem('logueado', 'true');
+    
+    db.collection("usuarios").doc(user.uid).get()
+      .then((doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          const idParaInput = data.employeeId;
+          const esAdmin = data.role === 'admin';
+
+          sessionStorage.setItem('esAdmin', esAdmin ? 'true' : 'false');
+          actualizarEstadoBotonesAdmin(esAdmin);
+
+          const inputId = document.getElementById("employeeId");
+          if (inputId) {
+            inputId.value = idParaInput;
+            inputId.readOnly = true;
+            actualizarNombre(); 
+          }
+        } else {
+          sessionStorage.removeItem('esAdmin');
+          actualizarEstadoBotonesAdmin(false);
+          console.warn("No se encontró el documento del usuario en la colección 'usuarios'");
+        }
+      })
+      .catch((error) => {
+        sessionStorage.removeItem('esAdmin');
+        actualizarEstadoBotonesAdmin(false);
+        console.error("Error al obtener datos del usuario:", error);
+      });
+
+    return;
+  }
+
+  sessionStorage.removeItem('logueado');
+  sessionStorage.removeItem('esAdmin');
+  actualizarEstadoBotonesAdmin(false);
+  if (!tienePermisoModal) {
+    window.location.replace("inicio.html");
+  }
+});
+</script>
+
+
+  <script>
+    setInterval(() => {
+      const ahora = new Date();
+      document.getElementById('clock').textContent = ahora.toLocaleTimeString('es-ES');
+    }, 1000);
+
+    let toastTimeout; // Variable global para controlar el timeout del toast
+
+    function mostrarToast(mensaje, tipo = "success") {
+      const toastContainer = document.getElementById("toastContainer");
+
+      // Eliminar todos los toasts existentes antes de mostrar uno nuevo
+      const oldToasts = toastContainer.querySelectorAll(".toast");
+      oldToasts.forEach(t => t.remove());
+
+      // Limpiar timeout anterior si existe
+      if (toastTimeout) {
+        clearTimeout(toastTimeout);
+        toastTimeout = null;
+      }
+
+      // Crear el nuevo toast
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      if (tipo === "error") toast.classList.add("toast-error");
+      if (tipo === "success") toast.classList.add("toast-success");
+      toast.textContent = mensaje;
+      toastContainer.appendChild(toast);
+
+      // Forzar reinicio de animación
+      void toast.offsetWidth;
+
+      // Eliminar el toast después de la animación
+      toastTimeout = setTimeout(() => {
+        if (toast && toast.parentNode) {
+          toast.remove();
+        }
+        toastTimeout = null;
+      }, 3000);
+    }
+
+    document.getElementById("employeeId").addEventListener("input", () => {
+      const id = document.getElementById("employeeId").value.trim();
+      const nombreInput = document.getElementById("employeeName");
+      
+      if (id) {
+        // Consultar en Firebase
+        db.collection("empleados").doc(id).get()
+          .then((doc) => {
+            if (doc.exists) {
+              const empleado = doc.data();
+              nombreInput.value = empleado.nombre;
+              if (empleado.fotoBaseUrl) {
+                setTimeout(() => precomputeDescriptorForId(id, empleado.fotoBaseUrl), 0);
+              }
+              
+              // Mostrar información del horario si está disponible
+              if (empleado.horarioEntrada && empleado.horarioSalida) {
+                document.getElementById("horarioInfo").textContent = 
+                  `Horario: ${empleado.horarioEntrada} - ${empleado.horarioSalida}`;
+                if (empleado.comidaInicio && empleado.comidaFin) {
+                  document.getElementById("horarioInfo").textContent += 
+                    ` | Comida: ${empleado.comidaInicio} - ${empleado.comidaFin}`;
+                }
+              } else {
+                document.getElementById("horarioInfo").textContent = "";
+              }
+            } else {
+              nombreInput.value = "ID no registrado";
+              document.getElementById("horarioInfo").textContent = "";
+            }
+          })
+          .catch((error) => {
+            console.error("Error al buscar empleado:", error);
+            nombreInput.value = "Error al buscar";
+            document.getElementById("horarioInfo").textContent = "";
+          });
+      } else {
+        nombreInput.value = "";
+        document.getElementById("horarioInfo").textContent = "";
+      }
+    });
+
+
+
+
+
+ 
+
+    // Función para guardar datos de empleado
+    function guardarDatosEmpleado(id, nombre, horarioEntrada, horarioSalida) {
+      // Obtener datos existentes
+      let datosEmpleados = JSON.parse(localStorage.getItem('empleadosCompletos')) || {};
+      
+      // Actualizar o agregar datos del empleado
+      datosEmpleados[id] = {
+        id: id,
+        nombre: nombre,
+        horarioEntrada: horarioEntrada,
+        horarioSalida: horarioSalida
+      };
+      
+      // Guardar en localStorage
+      localStorage.setItem('empleadosCompletos', JSON.stringify(datosEmpleados));
+    }
+    
+    // Modificar la función registrar para incluir validaciones y guardar datos del empleado
+    
+
+
+    // Función para cargar los registros del día actual
+    
+
+  </script>
+
+
+
+  <script>
+// --- Modal de autenticación profesional ---
+let accionPendiente = null;
+function mostrarAuthModal(callbackExitoso) {
+  accionPendiente = callbackExitoso;
+  document.getElementById('authUser').value = '';
+  document.getElementById('authPass').value = '';
+  document.getElementById('authError').textContent = '';
+  document.getElementById('authModal').style.display = 'flex';
+  document.getElementById('authUser').focus();
+}
+function cerrarAuthModal() {
+  document.getElementById('authModal').style.display = 'none';
+}
+
+
+async function verificarCredenciales() {
+  const emailInput = document.getElementById('authUser').value.trim();
+  const password = document.getElementById('authPass').value;
+  const errorDiv = document.getElementById('authError');
+  const user = auth.currentUser;
+
+  errorDiv.textContent = '';
+
+  if (!user) {
+    window.location.replace("inicio.html");
+    return;
+  }
+
+  if (emailInput && emailInput.toLowerCase() !== user.email.toLowerCase()) {
+    errorDiv.textContent = 'El correo no coincide con la sesión actual.';
+    return;
+  }
+
+  try {
+    const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
+    await user.reauthenticateWithCredential(credential);
+    const doc = await db.collection('usuarios').doc(user.uid).get();
+    if (!doc.exists) {
+      sessionStorage.removeItem('modalAutenticado');
+      errorDiv.textContent = 'Este usuario no tiene permisos de administrador.';
+      return;
+    }
+    const data = doc.data();
+    if (data.role !== 'admin') {
+      sessionStorage.removeItem('modalAutenticado');
+      errorDiv.textContent = 'Este usuario no tiene permisos de administrador.';
+      return;
+    }
+
+    sessionStorage.setItem('modalAutenticado', 'true');
+    cerrarAuthModal();
+
+    if (typeof accionPendiente === 'function') {
+      accionPendiente();
+    }
+
+  } catch (err) {
+    sessionStorage.removeItem('modalAutenticado');
+    console.error("Error de autenticación:", err);
+    errorDiv.textContent = 'Contraseña incorrecta.';
+  }
+}
+
+
+document.getElementById('authAccept').onclick = verificarCredenciales;
+document.getElementById('authCancel').onclick = cerrarAuthModal;
+document.getElementById('authPass').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') verificarCredenciales();
+});
+document.getElementById('authUser').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('authPass').focus();
+});
+// Dentro del bloque de autenticación profesional
+function flujoReinicioSeguro() {
+  mostrarAuthModal(() => {
+    if (confirm('¿Está seguro de reiniciar todos los registros? Esta acción no se puede deshacer.')) {
+      reiniciarRegistros();
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Botón Usuarios
+  const btnUsuarios = document.getElementById('linkUsuarios');
+  if (btnUsuarios) {
+    btnUsuarios.onclick = () => {
+      if (sessionStorage.getItem('modalAutenticado') === 'true') {
+        window.location.href = 'usuarios.html';
+      } else {
+        mostrarAuthModal(() => { window.location.href = 'usuarios.html'; });
+      }
+    };
+  }
+
+  // Botón Reporte
+  const btnReporte = document.getElementById('linkReporte');
+  if (btnReporte) {
+    btnReporte.onclick = () => {
+      if (sessionStorage.getItem('modalAutenticado') === 'true') {
+        window.location.href = 'reporte.html';
+      } else {
+        mostrarAuthModal(() => { window.location.href = 'reporte.html'; });
+      }
+    };
+  }
+
+  // Botón Reinicio
+  const btnReinicio = document.getElementById('btnReinicio');
+  if (btnReinicio) {
+    btnReinicio.onclick = flujoReinicioSeguro;
+  }
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+<!-- Modal de cámara con botón de cerrar -->
+<div id="cameraModal" style="display: none; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000;">
+  <button id="btnCerrarCamara" aria-label="Cerrar" title="Cerrar"
+    style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 20px; color: white; font-weight: bold; cursor: pointer; z-index: 10001;">
+    ✖
+  </button>
+
+  <!-- Contenedor de contenido con tamaño fijo -->
+  <div id="modalCameraContent"
+       style="background: transparent; padding: 0; border-radius: 0; text-align: center; width: auto; height: auto; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+    
+    <!-- Vista de la cámara -->
+    <div id="camaraView" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%;">
+      <video id="videoStream" autoplay playsinline style="width: 100%; max-width: 360px; height: auto; border-radius: 10px; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"></video>
+    </div>
+
+    <!-- Animación final -->
+    <div id="lottieFinal" style="display: none;">
+      <dotlottie-player
+        src="https://lottie.host/805bcfec-e260-4735-af26-54d64380e585/692ygN28CN.lottie"
+        background="transparent"
+        speed="1"
+        style="width: 220px; height: 220px;"
+        autoplay
+      ></dotlottie-player>
+    </div>
+
+    <canvas id="snapshotCanvas" width="400" height="300" style="display:none;"></canvas>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+  function capturarEvidencia(id, accion, preBlob) {
+  return new Promise((resolve) => {
+    const cameraModal = document.getElementById("cameraModal");
+    const camaraView = document.getElementById("camaraView");
+    const lottieFinal = document.getElementById("lottieFinal");
+    cameraModal.style.display = "flex";
+    camaraView.style.display = "none";
+    lottieFinal.style.display = "block";
+    const lottiePlayer = lottieFinal.querySelector("dotlottie-player");
+    if (lottiePlayer) {
+      lottiePlayer.stop();
+      lottiePlayer.play();
+    }
+    setTimeout(() => {
+      cameraModal.style.display = "none";
+      camaraView.style.display = "flex";
+      lottieFinal.style.display = "none";
+      resolve(true);
+    }, 1200);
+  });
+}
+
+  async function cargarModelosFaceApi() {
+    // ESTA ES LA LÍNEA CLAVE:
+    const MODEL_URL = './models'; // El './' indica que busque en la raíz de tu proyecto
+    
+    if (!window.__faceModelsLoaded) {
+        console.log('[face-api] Cargando modelos desde carpeta local...');
+        try {
+            // Esto cargará los .json y los shards de tu carpeta
+            await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+            
+            window.__faceModelsLoaded = true;
+            console.log('[face-api] Modelos cargados con éxito desde /models');
+        } catch (err) {
+            console.error('[face-api] Error cargando modelos locales:', err);
+        }
+    }
+}
+
+  function preloadFaceModels() {
+    if (window.__faceModelsLoaded) return;
+    const cb = () => cargarModelosFaceApi().catch(() => {});
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(cb, { timeout: 3000 });
+    } else {
+      setTimeout(cb, 0);
+    }
+  }
+  window.__faceDescriptorsCache = window.__faceDescriptorsCache || {};
+  async function precomputeDescriptorForId(id, url) {
+    try {
+      await cargarModelosFaceApi();
+      const img = await faceapi.fetchImage(url);
+      const res = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+      if (res && res.descriptor) {
+        window.__faceDescriptorsCache[id] = res.descriptor;
+      }
+    } catch (e) {}
+  }
+  document.addEventListener("DOMContentLoaded", preloadFaceModels);
+  async function capturarImagenAuto() {
+    return new Promise(async (resolve) => {
+      const cameraModal = document.getElementById("cameraModal");
+      const video = document.getElementById("videoStream");
+      const canvas = document.getElementById("snapshotCanvas");
+      const ctx = canvas.getContext("2d");
+      const camaraView = document.getElementById("camaraView");
+      const lottieFinal = document.getElementById("lottieFinal");
+      try {
+        cameraModal.style.display = "flex";
+        camaraView.style.display = "flex";
+        lottieFinal.style.display = "none";
+        // Configuración optimizada para evitar el Timeout
+    const constraints = { 
+      video: { 
+        width: { ideal: 640 }, 
+        height: { ideal: 480 },
+        facingMode: "user" 
+      } 
+    };
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
+
+    // Pausa de 500ms para asegurar que el flujo de video sea estable antes de procesar
+    await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(r => setTimeout(r, 400));
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+        const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.9));
+        cameraModal.style.display = "none";
+        resolve(blob || null);
+      } catch (e) {
+        mostrarToast("No se pudo capturar imagen para verificación", "error");
+        cameraModal.style.display = "none";
+        resolve(null);
+      }
+    });
+  }
+  
+
+ // --- INICIO DE BLOQUE REPARADO ---
+
+async function verificarIdentidad(id) {
+    const cameraModal = document.getElementById("cameraModal");
+    const video = document.getElementById("videoStream");
+    const canvas = document.getElementById("snapshotCanvas");
+    const ctx = canvas.getContext("2d");
+    const camaraView = document.getElementById("camaraView");
+    const UMBRAL = 0.45;
+
+    window.__scanState = window.__scanState || {
+        isScanning: false,
+        verificationDone: false,
+        frameDetecting: false,
+        scanInterval: null,
+        scanTimeout: null,
+    };
+    const state = window.__scanState;
+
+    if (state.isScanning) return { ok: false, blob: null };
+    state.verificationDone = false;
+    state.frameDetecting = false;
+
+    try {
+        cameraModal.style.display = "flex";
+        camaraView.style.display = "flex";
+
+        console.log('[verificación] Solicitando cámara...');
+        // Versión ultra-compatible para evitar el Timeout
+        const stream = await navigator.mediaDevices.getUserMedia({
+  video: {
+    width: 640,
+    height: 480,
+    frameRate: { ideal: 30 }
+  },
+  audio: false
+});
+
+        video.srcObject = stream;
+
+        await new Promise((resolve) => {
+            video.onloadedmetadata = () => {
+                video.play();
+                resolve();
+            };
+        });
+
+        // Espera de 2 segundos para estabilizar la luz
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        await cargarModelosFaceApi();
+
+        const doc = await db.collection("empleados").doc(id).get();
+        if (!doc.exists) throw new Error("ID no registrado");
+
+        const datos = doc.data();
+        let baseDescriptor = window.__faceDescriptorsCache[id] || null;
+
+        if (!baseDescriptor && datos.fotoBaseUrl) {
+            const baseImg = await faceapi.fetchImage(datos.fotoBaseUrl);
+            const baseRes = await faceapi.detectSingleFace(baseImg).withFaceLandmarks().withFaceDescriptor();
+            if (baseRes) {
+                baseDescriptor = baseRes.descriptor;
+                window.__faceDescriptorsCache[id] = baseDescriptor;
+            }
+        }
+
+        state.isScanning = true;
+        let loopResult = await new Promise((resolveLoop) => {
+            state.scanTimeout = setTimeout(() => resolveLoop(false), 1500);
+            state.scanInterval = setInterval(async () => {
+                if (state.verificationDone || state.frameDetecting) return;
+                state.frameDetecting = true;
+                try {
+                    const det = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+                    if (det && baseDescriptor) {
+                        const dist = faceapi.euclideanDistance(baseDescriptor, det.descriptor);
+                        if (dist <= UMBRAL) {
+  console.log('[verificación] Rostro совпide, verificación exitosa');
+
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.8));
+
+  state.verificationDone = true;
+  resolveLoop(blob);
+}
+
+                    }
+                } finally { state.frameDetecting = false; }
+            }, 500);
+        });
+
+        cerrarCamaraLocal(video, cameraModal);
+        limpiarEstadoEscaneo(state);
+        console.log('[verificación] Cámara cerrada y estado limpiado');
+
+        if (!loopResult && typeof mostrarToast === "function") {
+            mostrarToast("No se pudo verificar el rostro. Inténtalo de nuevo.", "error");
+        }
+        return loopResult ? { ok: true, blob: loopResult } : { ok: false, blob: null };
+
+    } catch (e) {
+        console.error("Error crítico:", e);
+        cerrarCamaraLocal(video, cameraModal);
+        if (typeof mostrarToast === "function") {
+            mostrarToast("Error durante la verificación facial.", "error");
+        }
+        return { ok: false, blob: null };
+    }
+}
+
+
+
+
+
+
+
+// Funciones auxiliares para mantener el código limpio
+function cerrarCamaraLocal(video, modal) {
+    if (video && video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
+    }
+    if (modal) modal.style.display = "none";
+}
+
+function limpiarEstadoEscaneo(state) {
+    if (state.scanInterval) clearInterval(state.scanInterval);
+    if (state.scanTimeout) clearTimeout(state.scanTimeout);
+    state.scanInterval = null;
+    state.scanTimeout = null;
+    state.isScanning = false;
+    state.verificationDone = false;
+    state.frameDetecting = false;
+}
+
+
+
+
+
+
+
+
+
+// 🔁 Manejo de cancelación manual por botón o múltiples clics fuera del modal
+function cerrarCamara() {
+  const modal = document.getElementById("cameraModal");
+  const video = document.getElementById("videoStream");
+  const camaraView = document.getElementById("camaraView");
+  const lottieFinal = document.getElementById("lottieFinal");
+
+  // Ocultar modal y restablecer vista
+  modal.style.display = "none";
+  camaraView.style.display = "flex";
+  lottieFinal.style.display = "none";
+
+  // Detener la cámara si sigue activa
+  if (video && video.srcObject) {
+    video.srcObject.getTracks().forEach(track => track.stop());
+    video.srcObject = null;
+  }
+
+  // Reiniciar el contador de clics
+  clickOutsideCount = 0;
+}
+
+// Configurar eventos de cierre
+(function configurarCierreDeCamara() {
+  const modal = document.getElementById("cameraModal");
+  const cerrarBtn = document.getElementById("btnCerrarCamara");
+  let clickOutsideCount = 0;
+
+  // Clic en la "X"
+  cerrarBtn.addEventListener("click", cerrarCamara);
+
+  // Clics fuera del contenido: cierra tras 3 clics
+  modal.addEventListener("click", function (e) {
+    const caja = document.getElementById("modalCameraContent");
+    if (!caja.contains(e.target)) {
+      clickOutsideCount++;
+      if (clickOutsideCount >= 3) {
+        cerrarCamara();
+      }
+    } else {
+      clickOutsideCount = 0; // si clic dentro, reiniciar
+    }
+  });
+})();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Reemplazar función registrar con integración de captura de evidencia
+async function registrar(accion) {
+  const id = document.getElementById("employeeId").value.trim();
+  const nombre = document.getElementById("employeeName").value;
+
+  if (!id || nombre === "ID no registrado" || !nombre) {
+    mostrarToast("Empleado no válido o no registrado.", "error");
+    return;
+  }
+
+  const ahora = new Date();
+  const fecha = ahora.toLocaleDateString('es-ES');
+  const hora = ahora.toLocaleTimeString('es-ES');
+  const fechaCompleta = ahora.toISOString();
+
+  // Obtener registros de hoy del empleado, ordenados descendente
+  const inicioHoy = new Date();
+  inicioHoy.setHours(0, 0, 0, 0);
+
+  try {
+    const registros = await db.collection("registros")
+  .orderBy("fechaCompleta", "desc")
+  .limit(30)
+  .get();
+
+let ultimaEntradaNoCerrada = null;
+const hoyISO = inicioHoy.toISOString();
+
+registros.forEach(doc => {
+  const r = doc.data();
+  if (r.id === id && r.fechaCompleta >= hoyISO) {
+    if (r.tipo === "Entrada" && !r.tiempoTrabajado) {
+      ultimaEntradaNoCerrada = doc;
+    }
+  }
+});
+
+
+    // Validaciones:
+    if (accion === "Entrada" && ultimaEntradaNoCerrada) {
+      mostrarToast("Ya existe una entrada sin salida registrada.", "error");
+      return;
+    }
+
+    if (accion === "Salida" && !ultimaEntradaNoCerrada) {
+      mostrarToast("No hay una entrada pendiente para registrar salida.", "error");
+      return;
+    }
+
+    const empleadoDoc = await db.collection("empleados").doc(id).get();
+    if (!empleadoDoc.exists) {
+      mostrarToast("Empleado no registrado.", "error");
+      return;
+    }
+    const empleadoDatos = empleadoDoc.data();
+    if (!empleadoDatos.fotoBaseUrl) {
+      mostrarToast("El empleado no tiene foto base registrada.", "error");
+      return;
+    }
+
+    const ver = await verificarIdentidad(id);
+    if (!ver.ok) return;
+    await capturarEvidencia(id, accion, ver.blob);
+
+    const nuevoRegistro = {
+      id,
+      nombre,
+      tipo: accion,
+      hora,
+      fecha,
+      fechaCompleta,
+      tiempoTrabajado: null
+    };
+
+    // Si es salida, calcular duración desde la última entrada sin cerrar
+    if (accion === "Salida" && ultimaEntradaNoCerrada) {
+      const entrada = ultimaEntradaNoCerrada.data();
+      const horaEntrada = new Date(entrada.fechaCompleta);
+      const diferenciaMs = ahora - horaEntrada;
+      const minutos = Math.floor(diferenciaMs / 60000);
+      const horas = Math.floor(minutos / 60);
+      const minutosRestantes = minutos % 60;
+      const tiempoTrabajado = `${horas}h ${minutosRestantes}m`;
+
+      await db.collection("registros").doc(ultimaEntradaNoCerrada.id).update({ tiempoTrabajado });
+      nuevoRegistro.tiempoTrabajado = tiempoTrabajado;
+    }
+
+    await db.collection("registros").add(nuevoRegistro);
+
+    mostrarToast(`${accion} registrada correctamente para ${nombre}`, "success");
+
+    // Mantener el mismo ID para permitir registros consecutivos
+    const inputId = document.getElementById("employeeId");
+    if (inputId) {
+      inputId.focus();
+    }
+    
+
+  } catch (error) {
+    console.error("Error en validación/registro:", error);
+    mostrarToast("Ocurrió un error al registrar. Intenta de nuevo.", "error");
+  }
+}
+
+
+</script>
+
+
+
+
+
+
+
+<!-- Componente del reproductor Lottie -->
+<script type="module" src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs"></script>
+
+<script
+  src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs"
+  type="module"
+></script>
+
+
+
+
+<script src="face-api.min.js"></script>
+<script src="app.js"></script> 
+<script src="script.js"></script>
+
+
+
+<script>
+  if (window.electronAPI) {
+    window.electronAPI.onRedNoAutorizada(() => {
+      window.location.replace("red-no-autorizada.html");
+    });
+  }
+</script>
+
+
+
+</body>
+</html>

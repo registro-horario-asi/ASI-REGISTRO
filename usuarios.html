@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Usuarios - ASI</title>
+  <style>
+    /* --- ESTILOS DEL MENÚ DE NAVEGACIÓN --- */
+    nav {
+      background: #1a202c; /* Fondo oscuro sólido para mejor contraste */
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      position: sticky; /* Se queda fijo al bajar */
+      top: 0;
+      z-index: 1000;
+      margin-bottom: 20px;
+    }
+  
+    nav a {
+      margin: 0 15px;
+      text-decoration: none;
+      color: #ffffff;
+      font-weight: bold;
+      transition: color 0.3s ease;
+      font-size: 1rem;
+    }
+  
+    nav a:hover {
+      color: #81c784;
+    }
+
+    /* --- RESTO DE TU ESTILO --- */
+    * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+    body { background: #f0f2f5; padding: 0; margin: 0; } /* Quitamos padding al body para el nav */
+    .card { background: white; padding: 25px; border-radius: 12px; max-width: 600px; margin: 0 auto 30px auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    h1 { text-align: center; color: #333; margin-top: 10px; }
+    
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: #444; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+    .grid-horas { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+    #msg { display: none; padding: 12px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: bold; }
+    .btn-main { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+    .btn-cam { width: 100%; margin-bottom: 10px; background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+    .tabla-container { max-width: 1000px; margin: auto; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow-x: auto; margin-bottom: 50px; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+    .img-tabla { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; }
+    
+    #cameraModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; flex-direction:column; }
+    video { width: 90%; max-width: 450px; border-radius: 12px; transform: scaleX(-1); }
+    .preview { max-width: 150px; display: none; border-radius: 8px; margin: 10px auto; border: 2px solid #007bff; }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <nav>
+    <a href="index.html">🏠 Inicio</a>
+    <a href="usuarios.html">👤 Usuarios</a>
+    <a href="reporte.html">📄 Reporte</a>
+  </nav>
+
+  <div class="card">
+    <h1>Gestión de Usuarios</h1>
+    <div id="msg"></div>
+
+    <div class="form-group">
+      <label>ID Empleado</label>
+      <input type="text" id="newId" placeholder="Ej: 1005">
+    </div>
+
+    <div class="form-group">
+      <label>Nombre Completo</label>
+      <input type="text" id="newName">
+    </div>
+
+    <div class="form-group">
+      <label>Rol</label>
+      <select id="role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+
+    <div class="grid-horas">
+      <div><label>Entrada</label><input type="text" id="horarioEntrada" value="08:00"></div>
+      <div><label>Salida</label><input type="text" id="horarioSalida" value="17:00"></div>
+      <div><label>Inicio Comida</label><input type="text" id="comidaInicio" value="13:00"></div>
+      <div><label>Fin Comida</label><input type="text" id="comidaFin" value="14:00"></div>
+    </div>
+
+    <label>Foto de Perfil</label>
+    <button class="btn-cam" id="btnAbrirCamara">📷 Tomar Foto con Cámara</button>
+    <input type="file" id="fotoBase" accept="image/*" style="margin-bottom:10px;">
+    
+    <center><img id="fotoBasePreview" class="preview"></center>
+
+    <button id="btnPrincipal" class="btn-main">➕ Agregar Empleado</button>
+    <button id="btnCancelar" style="display:none; margin-top:10px; background:#6c757d; color:white; border:none; width:100%; padding:10px; border-radius:6px; cursor:pointer;">Cancelar Edición</button>
+  </div>
+
+  <div class="tabla-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Foto</th>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Horarios</th>
+          <th>Comida</th>
+          <th>Rol</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="listaCuerpo"></tbody>
+    </table>
+  </div>
+
+  <div id="cameraModal">
+    <video id="userVideoStream" autoplay playsinline></video>
+    <div style="margin-top:20px; display:flex; gap:15px;">
+      <button id="btnCapturarFoto" style="background:#22c55e; color:white; padding:12px 30px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">CAPTURAR</button>
+      <button id="btnCerrarCamara" style="background:#ef4444; color:white; padding:12px 30px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">CERRAR</button>
+    </div>
+    <canvas id="userSnapshotCanvas" style="display:none;"></canvas>
+  </div>
+
+  <script>
+    // Tu config de Firebase se mantiene igual
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrGJ2fm4SKusE6Utd8LWUYbZ8a4OlxK7Q",
+      authDomain: "asi-registro.firebaseapp.com",
+      projectId: "asi-registro",
+      storageBucket: "asi-registro.firebasestorage.app",
+      messagingSenderId: "69513223842",
+      appId: "1:69513223842:web:d289ac996da4d8b3bcc1fb"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+  </script>
+  <script src="usuarios.js"></script>
+
+
+
+<div id="deleteModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:10001; align-items:center; justify-content:center;">
+  <div style="background:white; padding:25px; border-radius:12px; text-align:center; max-width:320px; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+    <h3 style="margin-top:0; color:#333;">¿Eliminar usuario?</h3>
+    <p style="color:#666; font-size:0.9rem;">Esta acción no se puede deshacer.</p>
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button id="btnConfirmDelete" style="flex:1; background:#ef4444; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">Eliminar</button>
+      <button id="btnCancelDelete" style="flex:1; background:#6b7280; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

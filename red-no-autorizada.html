@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Red no autorizada</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    .box {
+      background: #020617;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,.5);
+    }
+    h1 { color: #ef4444; }
+    p { margin-top: 10px; color: #cbd5f5; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>🚫 Red no autorizada</h1>
+    <p>Este sistema solo puede usarse<br>
+       conectado a una red de <b>ASI-INTEGRAL</b>.</p>
+    <p>Conéctese a la red correcta y reinicie la aplicación.</p>
+  </div>
+
+
+  <script>
+  history.pushState(null, "", location.href);
+  window.onpopstate = () => history.pushState(null, "", location.href);
+</script>
+
+</body>
+</html>
